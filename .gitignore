@@ -4,4 +4,5 @@
 *.pyo
 
 venv
-python_clamav.egg-info
+python*_clamav.egg-info
+dist
