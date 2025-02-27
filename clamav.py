@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Copyright (c) 2018-2021 Gianluigi Tiesi <sherpya@netfarm.it>
+# Copyright (c) 2025 STAN-TAB CORP. LTD
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,15 +28,21 @@
 # of the authors and should not be interpreted as representing official policies,
 # either expressed or implied, of the FreeBSD Project.
 
-import sys
 import os
-from ctypes import *
+import sys
+from ctypes import (
+    POINTER,
+    Structure,
+    byref,
+    c_char_p,
+    c_int,
+    c_longlong,
+    c_uint,
+    c_ulong,
+    c_void_p,
+    cdll
+)
 from ctypes.util import find_library
-
-__author__ = 'Gianluigi Tiesi'
-__email__ = 'sherpya@netfarm.it'
-__version__ = '0.101.0'
-
 
 cl_engine_p = c_void_p
 c_int_p = POINTER(c_int)
@@ -43,12 +50,9 @@ c_uint_p = POINTER(c_uint)
 c_ulong_p = POINTER(c_ulong)
 c_char_pp = POINTER(c_char_p)
 
-try:
-    library = find_library('clamav') or find_library('libclamav') or 'libclamav'
-    libclamav = cdll[library]
-except Exception:
-    print 'Unable to load libclamav library, make sure it is in search path\n'
-    raise
+library = find_library("clamav") or find_library("libclamav") or "libclamav"
+libclamav = cdll.LoadLibrary(library)
+
 
 libclamav.cl_init.argtypes = (c_uint,)
 libclamav.cl_retdbdir.restype = c_int
@@ -97,10 +101,10 @@ libclamav.cl_retver.restype = c_char_p
 # noinspection PyPep8Naming
 class cl_stat(Structure):
     _fields_ = [
-        ('dir', c_char_p),
-        ('stattab', c_void_p),
-        ('statdname', c_char_pp),
-        ('entries', c_uint)
+        ("dir", c_char_p),
+        ("stattab", c_void_p),
+        ("statdname", c_char_pp),
+        ("entries", c_uint),
     ]
 
 
@@ -110,11 +114,11 @@ cl_stat_p = POINTER(cl_stat)
 # noinspection PyPep8Naming
 class cl_scan_options(Structure):
     _fields_ = [
-        ('general', c_uint),
-        ('parse', c_uint),
-        ('heuristic', c_uint),
-        ('mail', c_uint),
-        ('dev', c_uint),
+        ("general", c_uint),
+        ("parse", c_uint),
+        ("heuristic", c_uint),
+        ("mail", c_uint),
+        ("dev", c_uint),
     ]
 
 
@@ -125,13 +129,29 @@ libclamav.cl_retflevel.restype = c_uint
 
 libclamav.cl_scanfile.restype = c_int
 if libclamav.cl_retflevel() < 101:
+
     def scanoptions():
         return 0
-    libclamav.cl_scanfile.argtypes = (c_char_p, c_char_pp, c_ulong_p, cl_engine_p, c_uint)
+
+    libclamav.cl_scanfile.argtypes = (
+        c_char_p,
+        c_char_pp,
+        c_ulong_p,
+        cl_engine_p,
+        c_uint,
+    )
 else:
+
     def scanoptions():
         return byref(cl_scan_options(parse=c_uint(~0)))
-    libclamav.cl_scanfile.argtypes = (c_char_p, c_char_pp, c_ulong_p, cl_engine_p, cl_scan_options_p)
+
+    libclamav.cl_scanfile.argtypes = (
+        c_char_p,
+        c_char_pp,
+        c_ulong_p,
+        cl_engine_p,
+        cl_scan_options_p,
+    )
 
 
 libclamav.cl_statinidir.argtypes = (c_char_p, cl_stat_p)
@@ -147,14 +167,14 @@ libclamav.cl_statchkdir.restype = c_int
 # noinspection PyPep8Naming
 class cl_cvd(Structure):
     _fields_ = [
-        ('time', c_char_p),
-        ('version', c_uint),
-        ('sigs', c_uint),
-        ('fl', c_uint),
-        ('md5', c_char_p),
-        ('dsig', c_char_p),
-        ('builder', c_char_p),
-        ('stime', c_uint)
+        ("time", c_char_p),
+        ("version", c_uint),
+        ("sigs", c_uint),
+        ("fl", c_uint),
+        ("md5", c_char_p),
+        ("dsig", c_char_p),
+        ("builder", c_char_p),
+        ("stime", c_uint),
     ]
 
 
@@ -167,40 +187,42 @@ libclamav.cl_cvdfree.argtypes = (cl_cvd_p,)
 libclamav.cl_cvdfree.restype = None
 
 CL_CLEAN = 0
-CL_SUCCESS, \
-    CL_VIRUS, \
-    CL_ENULLARG, \
-    CL_EARG, \
-    CL_EMALFDB, \
-    CL_ECVD, \
-    CL_EVERIFY, \
-    CL_EUNPACK, \
-    CL_EOPEN, \
-    CL_ECREAT, \
-    CL_EUNLINK, \
-    CL_ESTAT, \
-    CL_EREAD, \
-    CL_ESEEK, \
-    CL_EWRITE, \
-    CL_EDUP, \
-    CL_EACCES, \
-    CL_ETMPFILE, \
-    CL_ETMPDIR, \
-    CL_EMAP, \
-    CL_EMEM, \
-    CL_ETIMEOUT, \
-    CL_BREAK, \
-    CL_EMAXREC, \
-    CL_EMAXSIZE, \
-    CL_EMAXFILES, \
-    CL_EFORMAT, \
-    CL_EPARSE, \
-    CL_EBYTECODE, \
-    CL_EBYTECODE_TESTFAIL, \
-    CL_ELOCK, \
-    CL_EBUSY, \
-    CL_ESTATE, \
-    CL_ELAST_ERROR = range(34)
+(
+    CL_SUCCESS,
+    CL_VIRUS,
+    CL_ENULLARG,
+    CL_EARG,
+    CL_EMALFDB,
+    CL_ECVD,
+    CL_EVERIFY,
+    CL_EUNPACK,
+    CL_EOPEN,
+    CL_ECREAT,
+    CL_EUNLINK,
+    CL_ESTAT,
+    CL_EREAD,
+    CL_ESEEK,
+    CL_EWRITE,
+    CL_EDUP,
+    CL_EACCES,
+    CL_ETMPFILE,
+    CL_ETMPDIR,
+    CL_EMAP,
+    CL_EMEM,
+    CL_ETIMEOUT,
+    CL_BREAK,
+    CL_EMAXREC,
+    CL_EMAXSIZE,
+    CL_EMAXFILES,
+    CL_EFORMAT,
+    CL_EPARSE,
+    CL_EBYTECODE,
+    CL_EBYTECODE_TESTFAIL,
+    CL_ELOCK,
+    CL_EBUSY,
+    CL_ESTATE,
+    CL_ELAST_ERROR,
+) = range(34)
 
 CL_DB_PHISHING = 0x2
 CL_DB_PHISHING_URLS = 0x8
@@ -218,80 +240,87 @@ CL_DB_YARA_ONLY = 0x200000
 
 CL_DB_STDOPT = CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE
 
-CL_ENGINE_MAX_SCANSIZE, \
-    CL_ENGINE_MAX_FILESIZE, \
-    CL_ENGINE_MAX_RECURSION, \
-    CL_ENGINE_MAX_FILES, \
-    CL_ENGINE_MIN_CC_COUNT, \
-    CL_ENGINE_MIN_SSN_COUNT, \
-    CL_ENGINE_PUA_CATEGORIES, \
-    CL_ENGINE_DB_OPTIONS, \
-    CL_ENGINE_DB_VERSION, \
-    CL_ENGINE_DB_TIME, \
-    CL_ENGINE_AC_ONLY, \
-    CL_ENGINE_AC_MINDEPTH, \
-    CL_ENGINE_AC_MAXDEPTH, \
-    CL_ENGINE_TMPDIR, \
-    CL_ENGINE_KEEPTMP, \
-    CL_ENGINE_BYTECODE_SECURITY, \
-    CL_ENGINE_BYTECODE_TIMEOUT, \
-    CL_ENGINE_BYTECODE_MODE, \
-    CL_ENGINE_MAX_EMBEDDEDPE, \
-    CL_ENGINE_MAX_HTMLNORMALIZE, \
-    CL_ENGINE_MAX_HTMLNOTAGS, \
-    CL_ENGINE_MAX_SCRIPTNORMALIZE, \
-    CL_ENGINE_MAX_ZIPTYPERCG, \
-    CL_ENGINE_FORCETODISK, \
-    CL_ENGINE_DISABLE_CACHE, \
-    CL_ENGINE_DISABLE_PE_STATS, \
-    CL_ENGINE_STATS_TIMEOUT, \
-    CL_ENGINE_MAX_PARTITIONS, \
-    CL_ENGINE_MAX_ICONSPE, \
-    CL_ENGINE_MAX_RECHWP3, \
-    CL_ENGINE_MAX_SCANTIME, \
-    CL_ENGINE_PCRE_MATCH_LIMIT, \
-    CL_ENGINE_PCRE_RECMATCH_LIMIT, \
-    CL_ENGINE_PCRE_MAX_FILESIZE, \
-    CL_ENGINE_DISABLE_PE_CERTS, \
-    CL_ENGINE_PE_DUMPCERTS = range(36)
+(
+    CL_ENGINE_MAX_SCANSIZE,
+    CL_ENGINE_MAX_FILESIZE,
+    CL_ENGINE_MAX_RECURSION,
+    CL_ENGINE_MAX_FILES,
+    CL_ENGINE_MIN_CC_COUNT,
+    CL_ENGINE_MIN_SSN_COUNT,
+    CL_ENGINE_PUA_CATEGORIES,
+    CL_ENGINE_DB_OPTIONS,
+    CL_ENGINE_DB_VERSION,
+    CL_ENGINE_DB_TIME,
+    CL_ENGINE_AC_ONLY,
+    CL_ENGINE_AC_MINDEPTH,
+    CL_ENGINE_AC_MAXDEPTH,
+    CL_ENGINE_TMPDIR,
+    CL_ENGINE_KEEPTMP,
+    CL_ENGINE_BYTECODE_SECURITY,
+    CL_ENGINE_BYTECODE_TIMEOUT,
+    CL_ENGINE_BYTECODE_MODE,
+    CL_ENGINE_MAX_EMBEDDEDPE,
+    CL_ENGINE_MAX_HTMLNORMALIZE,
+    CL_ENGINE_MAX_HTMLNOTAGS,
+    CL_ENGINE_MAX_SCRIPTNORMALIZE,
+    CL_ENGINE_MAX_ZIPTYPERCG,
+    CL_ENGINE_FORCETODISK,
+    CL_ENGINE_DISABLE_CACHE,
+    CL_ENGINE_DISABLE_PE_STATS,
+    CL_ENGINE_STATS_TIMEOUT,
+    CL_ENGINE_MAX_PARTITIONS,
+    CL_ENGINE_MAX_ICONSPE,
+    CL_ENGINE_MAX_RECHWP3,
+    CL_ENGINE_MAX_SCANTIME,
+    CL_ENGINE_PCRE_MATCH_LIMIT,
+    CL_ENGINE_PCRE_RECMATCH_LIMIT,
+    CL_ENGINE_PCRE_MAX_FILESIZE,
+    CL_ENGINE_DISABLE_PE_CERTS,
+    CL_ENGINE_PE_DUMPCERTS,
+) = range(36)
 
 is_clamwin = False
 
-# helpers used by clamwin
-if sys.platform == 'win32':
-    try:
-        IsWow64Process = windll.kernel32.IsWow64Process
-        IsWow64Process.argtypes = (c_void_p, POINTER(c_int))
-        IsWow64Process.restypes = c_int
-        GetCurrentProcess = windll.kernel32.GetCurrentProcess
-        GetCurrentProcess.argtypes = None
-        GetCurrentProcess.restype = c_void_p
-    except AttributeError:
-        def isWow64():
-            return False
-    else:
-        def isWow64():
-            is_wow64 = c_int()
-            IsWow64Process(GetCurrentProcess(), byref(is_wow64))
-            return bool(is_wow64)
-
-    try:
-        libclamav.cw_disablefsredir.argtypes = None
-        libclamav.cw_disablefsredir.restypes = c_int
-        libclamav.cw_revertfsredir.argtypes = None
-        libclamav.cw_revertfsredir.restypes = c_int
-
-        def disableFsRedir():
-            return bool(libclamav.cw_disablefsredir())
-
-        def revertFsRedir():
-            return bool(libclamav.cw_revertfsredir())
-
-        is_clamwin = True
-    except AttributeError:
-        def disableFsRedir():
-            return False
-        revertFsRedir = disableFsRedir
+# # helpers used by clamwin
+# if sys.platform == "win32":
+#     try:
+#         IsWow64Process = windll.kernel32.IsWow64Process
+#         IsWow64Process.argtypes = (c_void_p, POINTER(c_int))
+#         IsWow64Process.restypes = c_int
+#         GetCurrentProcess = windll.kernel32.GetCurrentProcess
+#         GetCurrentProcess.argtypes = None
+#         GetCurrentProcess.restype = c_void_p
+#     except AttributeError:
+#
+#         def is_wow64():
+#             return False
+#
+#     else:
+#
+#         def is_wow64():
+#             is_wow64 = c_int()
+#             IsWow64Process(GetCurrentProcess(), byref(is_wow64))
+#             return bool(is_wow64)
+#
+#     try:
+#         libclamav.cw_disablefsredir.argtypes = None
+#         libclamav.cw_disablefsredir.restypes = c_int
+#         libclamav.cw_revertfsredir.argtypes = None
+#         libclamav.cw_revertfsredir.restypes = c_int
+#
+#         def disable_fs_redir():
+#             return bool(libclamav.cw_disablefsredir())
+#
+#         def revert_fs_redir():
+#             return bool(libclamav.cw_revertfsredir())
+#
+#         is_clamwin = True
+#     except AttributeError:
+#
+#         def disable_fs_redir():
+#             return False
+#
+#         revertFsRedir = disable_fs_redir
 
 
 class ClamavException(Exception):
@@ -312,22 +341,23 @@ def def_engine_options():
         CL_ENGINE_MAX_SCANSIZE: 1048576 * 50,
         CL_ENGINE_MAX_FILESIZE: 1048576 * 50,
         CL_ENGINE_MAX_FILES: 500,
-        CL_ENGINE_MAX_RECURSION: 20
+        CL_ENGINE_MAX_RECURSION: 20,
     }
 
 
 def clfunc(func):
     def wrapper(_, *args, **kwargs):
-        raise_on_fail = kwargs.get('raise_on_fail', True)
+        raise_on_fail = kwargs.get("raise_on_fail", True)
         ret = func(*args)
         if raise_on_fail and (ret != CL_SUCCESS):
             raise ClamavException(ret)
         return ret
+
     return wrapper
 
 
 class Scanner(object):
-    DBNAMES = ('main', 'daily', 'bytecode')
+    DBNAMES = ("main", "daily", "bytecode")
 
     dbstats = cl_stat()
     dbstats_p = byref(dbstats)
@@ -352,16 +382,23 @@ class Scanner(object):
     def cl_retdbdir(self):
         return str(libclamav.cl_retdbdir)
 
-    def __init__(self, dbpath=None, autoreload=False, dboptions=CL_DB_STDOPT, engine_options=None, debug=False):
+    def __init__(
+        self,
+        dbpath=None,
+        autoreload=False,
+        dboptions=CL_DB_STDOPT,
+        engine_options=None,
+        debug=False,
+    ):
         if dbpath is None:
-            dbpath = str(libclamav.cl_retdbdir())
+            dbpath = libclamav.cl_retdbdir().decode("utf-8")
         self.dbpath = dbpath
         self.autoreload = autoreload
 
         self.engine_options = engine_options or def_engine_options()
 
         if dbpath is None or not os.path.isdir(dbpath):
-            raise ClamavException('Invalid database path')
+            raise ClamavException("Invalid database path")
 
         self.dboptions = dboptions
 
@@ -374,16 +411,18 @@ class Scanner(object):
         if self.engine:
             self.cl_engine_free(self.engine, raise_on_fail=False)
 
-    def setEngineOption(self, opt, value):
+    def set_engine_option(self, opt, value):
         if not isinstance(value, (int, str)):
-            raise ClamavException('Invalid option value type %s: %r' % (type(value), value))
+            raise ClamavException(
+                "Invalid option value type %s: %r" % (type(value), value)
+            )
         self.engine_options[opt] = value
 
-    def setEngineOptions(self, options):
+    def set_engine_options(self, options):
         for opt, value in options.items():
-            self.setEngineOption(opt, value)
+            self.set_engine_option(opt, value)
 
-    def loadDB(self):
+    def load_db(self):
         if self.dbstats.entries:
             self.cl_statfree(self.dbstats_p)
 
@@ -392,59 +431,70 @@ class Scanner(object):
 
         self.engine = self.cl_engine_new()
         if self.engine is None:
-            raise ClamavException('cl_engine_new() failed')
+            raise ClamavException("cl_engine_new() failed")
 
-        self.cl_statinidir(self.dbpath, self.dbstats_p)
+        self.cl_statinidir(c_char_p(self.dbpath.encode("utf-8")), self.dbstats_p)
 
         for opt, value in self.engine_options.items():
             if isinstance(value, int):
                 self.cl_engine_set_num(self.engine, opt, value)
             elif isinstance(value, str):
-                self.cl_engine_set_str(self.engine, opt, value)
+                self.cl_engine_set_str(
+                    self.engine, opt, c_char_p(value.encode("utf-8"))
+                )
             else:
-                raise ClamavException('Invalid option value type %s: %r' % (type(value), value))
+                raise ClamavException(
+                    "Invalid option value type %s: %r" % (type(value), value)
+                )
 
-        self.cl_load(self.dbpath, self.engine, byref(self.signo), self.dboptions)
+        self.cl_load(
+            c_char_p(self.dbpath.encode("utf-8")),
+            self.engine,
+            byref(self.signo),
+            self.dboptions,
+        )
         self.cl_engine_compile(self.engine)
 
-    def checkAndLoadDB(self):
+    def check_and_load_db(self):
         if not self.engine:
-            return self.loadDB()
+            return self.load_db()
 
         ret = self.cl_statchkdir(self.dbstats_p)
 
         if ret == 0:  # No change
             pass
         elif ret == 1:  # Some change occurred
-            self.loadDB()
+            self.load_db()
         else:
             raise ClamavException(ret)
 
-    def scanFile(self, filename):
+    def scan_file(self, filename):
+        filename = c_char_p(filename.encode("utf-8"))
+
         if self.autoreload:
-            self.checkAndLoadDB()
+            self.check_and_load_db()
         if self.engine is None:
-            raise ClamavException('No database loaded')
+            raise ClamavException("No database loaded")
 
         virname = c_char_p()
-        ret = self.cl_scanfile(filename, byref(virname), None, self.engine, scanoptions())
+        ret = self.cl_scanfile(
+            filename, byref(virname), None, self.engine, scanoptions()
+        )
         if ret not in (CL_CLEAN, CL_VIRUS):
             raise ClamavException(ret)
         return ret, virname.value
 
-    def getVersions(self):
-        versions = {
-            'clamav': self.cl_retver()
-        }
+    def get_versions(self):
+        versions = {"clamav": self.cl_retver()}
 
         for dbname in Scanner.DBNAMES:
-            dbpath = os.path.join(self.dbpath, dbname + '.cvd')
+            dbpath = os.path.join(self.dbpath, dbname + ".cvd")
             if not os.path.isfile(dbpath):
-                dbpath = os.path.join(self.dbpath, dbname + '.cld')
+                dbpath = os.path.join(self.dbpath, dbname + ".cld")
             if not os.path.isfile(dbpath):
                 continue
 
-            cvd = self.cl_cvdhead(dbpath)
+            cvd = self.cl_cvdhead(c_char_p(dbpath.encode("utf-8")))
             if cvd:
                 versions[dbname] = cvd.contents.version
                 self.cl_cvdfree(cvd)
@@ -454,11 +504,12 @@ class Scanner(object):
         return versions
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import tempfile
+
     scanner = Scanner(autoreload=True)
-    scanner.setEngineOption(CL_ENGINE_TMPDIR, tempfile.gettempdir())
-    print scanner.scanFile('clam.exe')
-    print scanner.scanFile('clam.zip')
-    print scanner.signo.value
-    print scanner.getVersions()
+    scanner.set_engine_option(CL_ENGINE_TMPDIR, tempfile.gettempdir())
+    print(scanner.scan_file("clam.exe"))
+    print(scanner.scan_file("clam.zip"))
+    print(scanner.signo.value)
+    print(scanner.get_versions())

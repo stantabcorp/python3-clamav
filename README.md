@@ -1,4 +1,6 @@
-# pure python ClamAV scanner
+# pure python3 ClamAV scanner
+
+> This project is a fork of clamwin/python-clamav supporting python3
 
 It uses ctypes, you need libclamav in your search path.
 
@@ -7,8 +9,8 @@ The usage is simple:
 ```pycon
 >>> import clamav
 >>> scanner = clamav.Scanner()
->>> scanner.loadDB()
->>> scanner.scanFile('clam.exe')
+>>> scanner.load_db()
+>>> scanner.scan_file('clam.exe')
 (1, 'Clamav.Test.File-6')
 ```
 
